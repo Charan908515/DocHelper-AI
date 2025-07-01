@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Doc Helper AI - Login</title>
+
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+    background-color:rgb(171, 227, 241);
+
+    height: 100vh;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+}
+
+
+        .container { 
+            display: flex;
+            width: 75%;
+            max-width: 900px;
+            height: 479px;
+            border-radius: 20px;
+            background-color: #000;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.05), 0 0 20px rgba(0, 255, 170, 0.2); 
+        } 
+
+    
+
+
+
+
+        .left-panel {
+            flex: 1;
+            background-color: #fff;
+            color: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 40px 30px;
+        }
+
+        .left-panel h2 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 32px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input[type="email"],
+        input[type="password"],
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background-color: #2ebf91;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #a32498;
+        }
+
+        .link-btn {
+            background: none;
+            color: #007BFF;
+            font-size: 14px;
+            margin-top: 10px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Modal background */
+.otp-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    backdrop-filter: blur(5px);
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Modal content box */
+.otp-modal-content {
+    background: white;
+    color: black;
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    width: 300px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+}
+
+/* Hidden class */
+.hidden {
+    display: none;
+}
+
+
+        #status-message {
+            margin-top: 10px;
+            color: red;
+        }
+
+    .right-panel {
+    width: 479px;
+    height: 695px;
+    padding: 0;
+    margin: 0;
+    background-color: transparent;
+    display: block;
+}
+
+.right-panel img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+    
+           
+        
+    </style>
+</head>
+<body>
+    
+   <div class="container">
+
+    <div class="left-panel">
+        <h2>DocHelper AI</h2>
+        <input type="email" placeholder="Email Address" id="email" required>
+        <input type="password" placeholder="Password" id="password" required>
+        <button id="send-otp-btn"onclick="sendOTP()">Log In</button>
+        <button type="button" class="google-btn" onclick="location.href='/login/google'">
+            <img src="/static/google-icon.png" alt="Google" /> Sign in with Google
+        </button>
+
+        <div id="otp-modal" class="otp-modal hidden">
+            <div class="otp-modal-content">
+                <h3>Enter OTP</h3>
+                <input type="password" placeholder="Enter OTP" id="otp" required>
+                <button onclick="verifyOTP()" id="verify-btn">Verify OTP</button>
+                <button onclick="document.getElementById('otp-modal').classList.add('hidden')">Cancel</button>
+                
+                <p id="otp-status-message"></p>
+            </div>
+        </div>
+        
+
+        <button class="link-btn" id="forgot-password-btn" onclick="forgotPassword()">Forgot password?</button>
+        <button class="link-btn" onclick="registerButton()">Registration</button>
+        <p id="status-message"></p>
+    </div>
+
+    <!-- Right side with chatbot image -->
+    <div class="right-panel">
+        <img src="{{ url_for('static', filename='images/chatbot.jpg') }}" alt="Chatbot">
+
+    </div>
+    
+    
+    
+<script>
+    document.getElementById("forgot-password-btn").addEventListener("click", function() {
+   window.location.href = "/forgot-password";
+});
+    function registerButton() {
+       window.location.href = "/register_page";
+   }
+   
+
+   async function sendOTP() {
+const email = document.getElementById("email").value;
+const password=document.getElementById("password").value
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+if (!emailPattern.test(email)) {
+    document.getElementById("status-message").innerText = "Enter a valid email address.";
+    return;
+}
+
+
+if (!email || !password) {
+    document.getElementById("status-message").innerText = "Please enter both email address and password.";
+    return;
+}
+
+try {
+   const response1 = await fetch("/user-login", {
+               method: "POST",
+               headers: { "Content-Type": "application/json" },
+               body: JSON.stringify({ email, password })
+           });
+   
+   const data1 = await response1.json();
+   if (data1.success)
+   {
+       document.getElementById("status-message").innerText = "Sending OTP...";
+       
+       document.getElementById("otp-status-message").innerText = "Sending OTP...";
+      // Disable the button to prevent multiple clicks
+       const response2 = await fetch("/send-otp", {
+           method: "POST",
+           headers: { "Content-Type": "application/json" },
+           body: JSON.stringify({ email })
+       });
+
+       const data2 = await response2.json();
+       document.getElementById("status-message").innerText = data2.message; // Alert OTP sent message
+       if (data2.success) {
+ // Show the OTP status message
+    document.getElementById("otp-modal").classList.remove("hidden"); // Show the OTP modal
+    document.getElementById("status-message").innerText = "";
+       
+       document.getElementById("otp-status-message").innerText = "Enter the OTP sent to your email."; // Show the OTP status message
+    // Show the OTP input field
+} else {
+    document.getElementById("otp-status-message").innerText = data.message;
+}
+
+   }
+   else{
+       document.getElementById("status-message").innerText = data1.message;
+   }
+} catch (error) {
+   console.error("Error:", error);
+   document.getElementById("status-message").innerText = "Login failed. Please try again later.";
+   
+}
+}
+
+
+   async function verifyOTP() {
+       const email = document.getElementById("email").value;
+       const otp = document.getElementById("otp").value;
+
+       if (!email || !otp) {
+           document.getElementById("otp-status-message").innerText = "enter the valid otp";
+           return;
+       }
+
+       document.getElementById("otp-status-message").innerText = "Verifying OTP...";
+      
+
+       try {
+           const response = await fetch("/verify-otp", {
+               method: "POST",
+               headers: { "Content-Type": "application/json" },
+               body: JSON.stringify({ email, otp })
+           });
+
+           const data = await response.json();
+
+           if (data.success) {
+               document.getElementById("otp-status-message").innerText = " otp verified successfully";
+               sessionStorage.setItem("username", document.getElementById("email").value);
+               window.location.href=data.redirect
+           } else {
+               document.getElementById("status-message").innerText = data.message;
+               document.getElementById("verify-btn").disabled = false;
+           }
+
+           
+       } catch (error) {
+           console.error("Error:", error);
+           document.getElementById("otp-status-message").innerText = "OTP verification failed. Please try again.";
+           document.getElementById("verify-btn").disabled = false;
+       }
+   }
+   function togglePassword() {
+    const passwordField = document.getElementById("password");
+    const toggleBadge = document.getElementById("toggleBadge");
+
+    if (passwordField.type === "password") {
+        passwordField.type = "text";
+        toggleBadge.textContent = "Hide";
+    } else {
+        passwordField.type = "password";
+        toggleBadge.textContent = "Show";
+    }
+}
+function forgotPassword() {
+    window.location.href = "/forgot-password";
+}
+</script>
+</body>
+</html>

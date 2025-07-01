@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Videos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        .video-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .video-card {
+            width: 300px;
+            margin: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            text-align: left;
+        }
+        .video-card img {
+            width: 100%;
+            border-radius: 5px;
+        }
+        .video-card a {
+            display: block;
+            margin-top: 5px;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .video-card a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h2>YouTube Videos</h2>
+    <div id="videoContainer" class="video-container"></div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+
+            const videos = JSON.parse(sessionStorage.getItem("youtubeVideos")); // Retrieve from sessionStorage
+
+            if (!videos || videos.length === 0) {
+
+                document.getElementById("videoContainer").innerHTML = "<p>No videos found.</p>";
+
+                return;
+
+            }
+
+
+
+            const container = document.getElementById("videoContainer");
+
+            videos.forEach(video => {
+
+                const videoCard = document.createElement("div");
+
+                videoCard.classList.add("video-card");
+
+                videoCard.innerHTML = `
+
+                    <img src="${video.thumbnail_url}" alt="Thumbnail">
+
+                    <p><strong>${video.title}</strong></p>
+
+                    <a href="${video.video_url}" target="_blank">Watch on YouTube</a>
+
+                    <a href="${video.download_link}" target="_blank">Download Video</a>
+
+                `;
+
+                container.appendChild(videoCard);
+
+            });
+
+        });
+    </script>
+</body>
+</html>

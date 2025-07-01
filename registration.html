@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register Page</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap" rel="stylesheet"/>
+</head>
+<body style="
+  margin: 0;
+  padding: 0;
+  font-family: 'Quicksand', sans-serif;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #1abc9c, #3498db);
+">
+
+<div style="
+  background-color: white;
+  padding: 30px 25px;
+  border-radius: 20px;
+  width: 350px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  animation: fadeIn 1s ease-in-out;
+">
+
+  <h2 style="
+    color: #2c7da0;
+    margin-bottom: 25px;
+    font-size: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  ">
+    <i class="fas fa-user-plus" style="margin-right: 10px;"></i> Sign Up
+  </h2>
+
+  <div style="position: relative; margin-bottom: 15px;">
+    <i class="fas fa-user" style="position: absolute; top: 12px; left: 12px; color: #1abc9c;"></i>
+    <input type="text" id="name" placeholder="Full Name" required style="
+      width: 70%;
+      padding: 12px 12px 12px 38px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 15px;
+      transition: box-shadow 0.3s;
+    " onfocus="this.style.boxShadow='0 0 10px #76d7c4'" onblur="this.style.boxShadow='none'"/>
+  </div>
+
+  <div style="position: relative; margin-bottom: 15px;">
+    <i class="fas fa-envelope" style="position: absolute; top: 12px; left: 12px; color: #1abc9c;"></i>
+    <input type="email" id="email" placeholder="Email Address" required style="
+      width: 70%;
+      padding: 12px 12px 12px 38px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 15px;
+      transition: box-shadow 0.3s;
+    " onfocus="this.style.boxShadow='0 0 10px #76d7c4'" onblur="this.style.boxShadow='none'"/>
+  </div>
+
+  <div style="position: relative; margin-bottom: 20px;">
+    <i class="fas fa-lock" style="position: absolute; top: 12px; left: 12px; color: #1abc9c;"></i>
+    <input type="password" id="password" placeholder="Password" required style="
+      width: 70%;
+      padding: 12px 12px 12px 38px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 15px;
+      transition: box-shadow 0.3s;
+    " onfocus="this.style.boxShadow='0 0 10px #76d7c4'" onblur="this.style.boxShadow='none'"/>
+  </div>
+
+  <button onclick="registerUser()" style="
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #16a085, #2980b9);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+    Register
+  </button>
+
+  <p id="status-message" style="margin-top: 15px; color: red; font-size: 14px;"></p>
+</div>
+
+<script>
+  async function registerUser() {
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const name = document.getElementById("name").value.trim();
+    const status = document.getElementById("status-message");
+
+    if (!name || !email || !password) {
+      status.innerText = "All fields are required.";
+      return;
+    }
+
+    if (password.length < 8 || password.length > 20) {
+      status.innerText = "Password must be 8-20 characters.";
+      return;
+    }
+
+    try {
+      const response = await fetch("/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        sessionStorage.setItem("username", email);
+        status.style.color = "green";
+        status.innerText = "Registration successful!";
+        setTimeout(() => window.location.href = "/login", 1000);
+      } else {
+        status.innerText = data.message || "Registration failed.";
+      }
+    } catch (error) {
+      status.innerText = "Error occurred. Try again.";
+    }
+  }
+</script>
+
+</body>
+</html>

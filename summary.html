@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Summary</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7ff;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            color: #4e54c8;
+        }
+        .summary-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e3e8ff;
+            border-radius: 8px;
+            text-align: left;
+            font-size: 16px;
+            line-height: 1.6;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            min-height: 50px;
+        }
+        .download-btn {
+            margin-top: 30px;
+            background-color: #4e54c8;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .download-btn:hover {
+            background-color: #3d43b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Generated Summary</h2>
+        <div class="summary-box" id="summary-box">Loading summary...</div>
+
+        <button class="download-btn" id="download-pdf-btn">📄 Download Summary as PDF</button>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const summaryBox = document.getElementById("summary-box");
+            const summaryText = sessionStorage.getItem("summaryText");
+
+            if (summaryText) {
+                summaryBox.innerHTML = summaryText;
+            } else {
+                summaryBox.innerHTML = "No summary available.";
+            }
+
+            document.getElementById("download-pdf-btn").addEventListener("click", async () => {
+                const response = await fetch("/download_summary_pdf", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ summary: summaryBox.innerHTML })
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "summary.pdf";
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                } else {
+                    alert("Failed to download summary as PDF.");
+                }
+            });
+        });
+    </script>
+</body>
+</html>

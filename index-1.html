@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Doc Helper AI</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Inter&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to right, #f8f9fc, #eef2f7);
+    }
+    .left-col, .right-col {
+      height: 100vh;
+      overflow: auto;
+      padding: 20px;
+    }
+    #chatBox {
+      height: 70vh;
+      overflow-y: auto;
+      background: #fff;
+      padding: 1rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    .chat-message {
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      max-width: 80%;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    .user-message {
+      background-color: #dce6f1;
+      align-self: flex-end;
+    }
+    .bot-message {
+      background-color: #f1f3f5;
+      align-self: flex-start;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .btn-group > button {
+      min-width: 140px;
+      font-weight: 500;
+      transition: 0.3s;
+    }
+    .btn-group > button:hover {
+      transform: scale(1.05);
+    }
+    
+  </style>
+</head>
+<body>
+        
+  <!-- Loader 
+  <div id="loader" class="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-light bg-opacity-75" style="z-index: 9999; display: none;">
+    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>  -->
+
+  <div class="container-fluid">
+    <div class="row g-0">
+      <!-- PDF Section -->
+      <div class="col-md-6 left-col bg-white">
+        <h4 class="mb-3">Uploaded PDF</h4>
+        <input type="file" id="fileInput" class="form-control mb-4">
+        <div id="pdfViewer" style="width: 100%;"></div>
+      </div>
+
+      <!-- Chat Section -->
+      <div class="col-md-6 right-col d-flex flex-column bg-light">
+        <h4 class="mb-3">Chat with DocHelper AI</h4>
+        <div id="chatBox" class="mb-3 d-flex flex-column"></div>
+        <input type="text" id="questionInput" class="form-control mb-2" placeholder="Ask something...">
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end btn-group">
+          <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+          <button class="btn btn-secondary" onclick="fetchSummary()">Summary</button>
+          <button class="btn btn-info" onclick="fetchYouTubeVideos()">YouTube</button>
+          <button class="btn btn-warning" onclick="window.location.href='/profile'">Profile</button>
+          <button class="btn btn-dark" onclick="window.location.href='/history'">History</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+ /*   document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("loader").style.display = "none";
+});*/
+
+window.addEventListener("load", () => {
+  const savedSessionId = sessionStorage.getItem("sessionId");
+  const savedFile = sessionStorage.getItem("uploadedFile");
+  const savedUser = sessionStorage.getItem("username");
+
+  if (savedSessionId && savedUser) {
+    sessionId = savedSessionId;
+    userId = savedUser;
+
+    fetch(`/pdf/${sessionId}?user_id=${encodeURIComponent(userId)}`)
+      .then(res => res.blob())
+      .then(blob => {
+        const file = new File([blob], savedFile || "reloaded.pdf", { type: "application/pdf" });
+        renderPDF(file); // Reuse your existing function
+      })
+      .catch(err => {
+        console.warn("PDF not restored:", err);
+      });
+    // Restore chat messages
+    restoreChatHistory();
+  }
+});
+
+    let sessionId = "";
+    let userId = sessionStorage.getItem("username");
+    if (!userId) {
+        userId = "guest_user";
+        sessionStorage.setItem("username", userId);
+        }
+
+    document.getElementById('fileInput').addEventListener('change', function (e) {
+      const files = e.target.files;
+      if (files.length === 0) return;
+
+      // document.getElementById("loader").style.display = "flex"; // Show loader
+
+      const formData = new FormData();
+      formData.append("email", userId || "guest_user");
+      for (let i = 0; i < files.length; i++) {
+        formData.append("files", files[i]);
+      }
+
+      fetch("/upload", { method: "POST", body: formData })
+        .then(res => res.json())
+        .then(data => {
+          if (data.session_id) {
+            sessionId = data.session_id;
+            sessionStorage.setItem("sessionId", sessionId);
+            renderPDF(files[0]); // Corrected: pass the actual file
+            alert("PDF uploaded and session started!");
+          } else {
+            alert("Upload failed: " + data.error);
+            document.getElementById("loader").style.display = "none"; // Hide loader
+          }
+        })
+        .catch(error => {
+          console.error("Error:", error);
+          document.getElementById("loader").style.display = "none"; // Hide loader
+        });
+    });
+
+    function renderPDF(file) {
+      const reader = new FileReader();
+      reader.onload = function () {
+        const typedArray = new Uint8Array(this.result);
+        const pdfContainer = document.getElementById("pdfViewer");
+        pdfContainer.innerHTML = "";
+
+        pdfjsLib.getDocument(typedArray).promise.then(pdf => {
+          let renderedPages = 0;
+
+          for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            pdf.getPage(pageNum).then(page => {
+              const containerWidth = document.querySelector(".left-col").offsetWidth;
+              const scale = containerWidth / page.getViewport({ scale: 1 }).width;
+              const viewport = page.getViewport({ scale: scale });
+
+              const canvas = document.createElement("canvas");
+              const context = canvas.getContext("2d");
+              canvas.height = viewport.height;
+              canvas.width = viewport.width;
+
+              const pageDiv = document.createElement("div");
+              pageDiv.classList.add("mb-3");
+              pageDiv.appendChild(canvas);
+              pdfContainer.appendChild(pageDiv);
+
+              page.render({ canvasContext: context, viewport: viewport }).promise.then(() => {
+                renderedPages++;
+                if (renderedPages === pdf.numPages) {
+                  document.getElementById("loader").style.display = "none"; // Hide loader when all pages rendered
+                }
+              });
+            });
+          }
+        });
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function sendMessage() {
+      const input = document.getElementById("questionInput");
+      const text = input.value.trim();
+      if (!text || !userId || !sessionId) return;
+      appendMessage("user", text);
+      input.value = "";
+
+      fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId, session_id: sessionId, question: text })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            appendMessage("bot", "Server Error: " + data.error);
+          } else {
+            appendMessage("bot", data.answer || "Sorry, couldn't process your query.");
+          }
+        })
+        .catch(error => {
+          console.error("Chat error:", error);
+          appendMessage("bot", "Error contacting server.");
+        });
+    }
+
+    function appendMessage(role, message) {
+      const msg = document.createElement("div");
+      msg.className = `chat-message ${role}-message`;
+      msg.innerHTML = message;
+      document.getElementById("chatBox").appendChild(msg);
+      document.getElementById("chatBox").scrollTop = document.getElementById("chatBox").scrollHeight;
+    }
+
+    function fetchSummary() {
+            let summaryButton = document.querySelector("button[onclick='fetchSummary()']");
+            summaryButton.textContent = "Generating...";
+            summaryButton.disabled = true; // Disable button to prevent multiple clicks
+
+            fetch("/summary", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    user_id: sessionStorage.getItem("username"),
+                    session_id: sessionStorage.getItem("sessionId")
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.summary) {
+                    sessionStorage.setItem("summaryText", data.summary); // Store summary in sessionStorage
+                    summaryButton.textContent = "View Summary";
+                    window.location.href = "/summary_page"; // Redirect to summary.html
+                } else {
+                    alert("Failed to generate summary.");
+                    summaryButton.textContent = "Summary";
+                }
+                summaryButton.disabled = false; // Re-enable button
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                summaryButton.textContent = "Summary";
+                summaryButton.disabled = false;
+            });
+        }
+
+
+    function fetchYouTubeVideos() {
+            if (!userId || !sessionId) { alert("Please upload a file first."); return; }
+            let summaryButton = document.querySelector("button[onclick='fetchYoutubeVideos()']");
+            summaryButton.textContent = "Generating...";
+            summaryButton.disabled = true; // Disable button to prevent multiple clicks
+            fetch("/fetch_youtube_videos", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id: userId, session_id: sessionId })
+            })
+            .then(response => response.json())
+            .then(data => {
+            if (data.error) {
+            alert("Error: " + data.error);
+            return;
+            }
+            summaryButton.textContent = "View Summary";
+
+            sessionStorage.setItem("youtubeVideos", JSON.stringify(data.videos)); // Store videos
+            window.location.href = "/redirect_youtube_videos"; // Redirect to new page
+            summaryButton.textContent = "View Summary";
+            })
+            .catch(error => console.error("Error:", error));
+            summaryButton.textContent = "Summary";
+                summaryButton.disabled = false;
+        }
+
+        function restoreChatHistory() {
+  const sessionId = sessionStorage.getItem("sessionId");
+  const userId = sessionStorage.getItem("username");
+  if (!sessionId || !userId) return;
+
+  fetch(`/get_user_sessions?email=${encodeURIComponent(userId)}`)
+    .then(response => response.json())
+    .then(data => {
+      const sessions = data.sessions || {};
+      const session = sessions[sessionId];
+      if (!session) return;
+
+      const history = session.history || [];
+      history.forEach(entry => {
+        appendMessage(entry.role, entry.message);
+      });
+    })
+    .catch(err => {
+      console.error("Failed to restore chat history:", err);
+    });
+}
+
+  /*  window.addEventListener("load", () => {
+  document.getElementById("loader").style.display = "none";
+    });
+*/
+  </script>
+</body>
+</html>
